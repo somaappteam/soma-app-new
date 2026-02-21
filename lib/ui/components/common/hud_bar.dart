@@ -17,9 +17,6 @@ class HudBar extends StatelessWidget {
     required this.xp,
     required this.streak,
     required this.onCourseTap,
-    required this.onSettingsTap,
-    required this.avatarLetter,
-    required this.onAvatarTap,
   });
 
   final String baseLang;
@@ -28,9 +25,6 @@ class HudBar extends StatelessWidget {
   final int streak;
 
   final VoidCallback onCourseTap;
-  final VoidCallback onSettingsTap;
-  final String avatarLetter;
-  final VoidCallback onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -58,74 +52,93 @@ class HudBar extends StatelessWidget {
             value: streak.toString(),
             tooltip: 'Streak',
           ),
-          const SizedBox(width: 10),
-          _GuestAvatar(letter: avatarLetter, onTap: onAvatarTap),
         ],
       ),
     );
   }
 }
 
-class _GuestAvatar extends StatelessWidget {
-  const _GuestAvatar({required this.letter, required this.onTap});
 
-  final String letter;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: AppColors.panel,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.panelBorder),
-        ),
-        child: Center(
-          child: Text(
-            letter,
-            style: AppTextStyles.small.copyWith(color: AppColors.textPrimary),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatPill extends StatelessWidget {
+class _StatPill extends StatefulWidget {
   const _StatPill({
     required this.icon,
     required this.value,
-    required this.tooltip,
+    this.tooltip,
   });
 
   final IconData icon;
   final String value;
-  final String tooltip;
+  final String? tooltip;
+
+  @override
+  State<_StatPill> createState() => _StatPillState();
+}
+
+class _StatPillState extends State<_StatPill> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.25).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.25, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
+    ]).animate(_pulseController);
+  }
+
+  @override
+  void didUpdateWidget(covariant _StatPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _pulseController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.panel,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.panelBorder),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: AppColors.textSecondary),
-            const SizedBox(width: 6),
-            Text(value, style: AppTextStyles.numberSmall),
-          ],
-        ),
+    final Widget child = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.panel,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.panelBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(widget.icon, color: AppColors.accent, size: 18),
+          const SizedBox(width: 4),
+          AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: child,
+              );
+            },
+            child: Text(
+              widget.value,
+              style: AppTextStyles.subtitle.copyWith(fontSize: 14),
+            ),
+          ),
+        ],
       ),
     );
+
+    if (widget.tooltip != null) {
+      return Tooltip(message: widget.tooltip!, child: child);
+    }
+    return child;
   }
 }

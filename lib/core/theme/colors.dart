@@ -42,6 +42,9 @@ class AppColors {
 
   static const Color warning = Color(0xFFFFC857);
 
+  /// Alias for XP / score highlights (golden / amber)
+  static const Color accent = Color(0xFFFFC857);
+
   // ---------- Misc ----------
   static const Color shadow = Color(0xCC000000); // for shadows (80% black)
   static const Color overlay = Color(0x99000000); // modal overlay (60% black)

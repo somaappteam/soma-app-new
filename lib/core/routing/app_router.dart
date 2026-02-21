@@ -4,7 +4,7 @@ import 'transitions.dart';
 
 // Screens (we’ll create these files later in order)
 import '../../ui/screens/setup_page.dart';
-import '../../ui/screens/home_page.dart';
+import '../../ui/screens/main_screen.dart';
 import '../../ui/screens/player_page.dart';
 import '../../ui/screens/result_page.dart';
 
@@ -26,7 +26,7 @@ class AppRouter {
 
       case home:
         return AppTransitions.sceneRoute(
-          page: const HomePage(),
+          page: const MainScreen(),
           settings: settings,
         );
 

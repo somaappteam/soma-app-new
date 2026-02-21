@@ -2,44 +2,51 @@
 import 'package:flutter/material.dart';
 
 import '../../controllers/app_controller.dart';
-import '../../controllers/session_controller.dart';
 import '../../core/routing/app_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/text_styles.dart';
 import '../../core/theme/spacing.dart';
-import '../components/common/action_card.dart';
+import '../components/home/daily_goal_card.dart';
+import '../components/home/game_mode_grid.dart';
 import '../components/common/app_shell.dart';
-import '../components/common/app_toast.dart';
 import '../components/common/continue_card.dart';
 import '../components/common/hud_bar.dart';
 import '../sheets/course_switcher_sheet.dart';
-import '../sheets/settings_sheet.dart';
 import 'player_page.dart';
 import '../components/common/focus_chip.dart';
 import '../sheets/focus_picker_sheet.dart';
-import '../sheets/sign_in_sheet.dart';
-import '../sheets/email_entry_sheet.dart';
-import '../sheets/otp_code_sheet.dart';
-import '../sheets/vocab_mode_picker_sheet.dart';
-import '../components/vocab_modes/vocab_mode_type.dart';
-import '../sheets/sentence_mode_picker_sheet.dart';
-import '../components/sentence_modes/sentence_mode_type.dart';
+
 
 /// Home hub: only 3 actions (Continue / Practice / Compete).
 /// UI-only state is stored in a simple AppController instance.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final AppController app;
+  const HomePage({super.key, required this.app});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // UI-only global-ish state for now.
-  // Later: lift this into a provider / DI.
-  final AppController app = AppController();
-
+  late final AppController app;
   LearningFocus focus = LearningFocus.mix;
+
+  @override
+  void initState() {
+    super.initState();
+    app = widget.app;
+    app.addListener(_onAppChanged);
+  }
+
+  @override
+  void dispose() {
+    app.removeListener(_onAppChanged);
+    super.dispose();
+  }
+
+  void _onAppChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,19 +57,18 @@ class _HomePageState extends State<HomePage> {
         xp: app.xp,
         streak: app.streak,
         onCourseTap: () => _openCourseSwitcher(context),
-        onSettingsTap: () => _openSettings(context),
-        avatarLetter: app.isLoggedIn
-            ? (app.displayName.trim().isNotEmpty
-                  ? app.displayName.trim()[0].toUpperCase()
-                  : 'U')
-            : 'G',
-        onAvatarTap: () => _openSettings(context),
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.s16),
         child: ListView(
           children: [
             const SizedBox(height: AppSpacing.s8),
+
+            DailyGoalCard(
+              currentXp: app.xp,
+              streak: app.streak,
+            ),
+            const SizedBox(height: AppSpacing.s16),
 
             ContinueCard(
               focus: focus,
@@ -87,147 +93,17 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
-            const SizedBox(height: AppSpacing.s12),
+            const SizedBox(height: AppSpacing.s32),
 
-            Row(
-              children: [
-                Expanded(
-                  child: ActionCard(
-                    title: 'Practice',
-                    subtitle: 'Quick review • 90 sec',
-                    icon: Icons.bolt_rounded,
-                    accent: AppColors.success,
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRouter.player,
-                        arguments: PlayerArgs.solo(
-                          isPractice: true,
-                          vocabMode: app.vocabMode,
-                          sentenceMode: app.sentenceMode,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
-                  child: ActionCard(
-                    title: 'Compete',
-                    subtitle: '1v1 quick match',
-                    icon: Icons.sports_esports_rounded,
-                    accent: AppColors.secondary,
-                    onTap: () {
-                      if (!app.isLoggedIn) {
-                        SignInSheet.show(
-                          context,
-                          onGoogle: () =>
-                              setState(() => app.signInAs('Alex (Google)')),
-                          onApple: () =>
-                              setState(() => app.signInAs('Alex (Apple)')),
-                          onEmail: _startEmailOtpSignIn,
-                          onSkip: () {
-                            // stay on Home, do nothing
-                            AppToast.showInfo(context, 'Continue in Solo mode');
-                          },
-                        );
-                        return;
-                      }
-
-                      Navigator.pushNamed(
-                        context,
-                        AppRouter.player,
-                        arguments: PlayerArgs.compete(
-                          vocabMode: app.vocabMode,
-                          sentenceMode: app.sentenceMode,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () {
-                  VocabModePickerSheet.show(
-                    context,
-                    current: app.vocabMode,
-                    onSelected: (m) => setState(() => app.setVocabMode(m)),
-                  );
-                },
-                child: Text(
-                  'Vocabulary mode: ${app.vocabMode.title}  ▾',
-                  style: AppTextStyles.small.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 4),
-
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () {
-                  SentenceModePickerSheet.show(
-                    context,
-                    current: app.sentenceMode,
-                    onSelected: (m) => setState(() => app.setSentenceMode(m)),
-                  );
-                },
-                child: Text(
-                  'Sentence mode: ${app.sentenceMode.title}  ▾',
-                  style: AppTextStyles.small.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.s24),
-
-            Text('Keep it simple', style: AppTextStyles.subtitle),
-            const SizedBox(height: AppSpacing.s8),
-            Text(
-              'One course. Three actions. Fast learning.',
-              style: AppTextStyles.bodyMuted,
-            ),
-
-            const SizedBox(height: AppSpacing.s24),
-
-            TextButton(
-              onPressed: () {
-                // UI-only placeholder
-                AppToast.showInfo(context, 'Progress (UI-only placeholder)');
-              },
-              child: const Text('Progress'),
-            ),
+            const GameModeGrid(),
+            
+            const SizedBox(height: AppSpacing.s32),
           ],
         ),
       ),
     );
   }
 
-  void _startEmailOtpSignIn() {
-    EmailEntrySheet.show(
-      context,
-      onSendCode: (email) {
-        // After "sending code", open OTP sheet
-        OtpCodeSheet.show(
-          context,
-          email: email,
-          onVerified: () {
-            AppToast.showSuccess(context, 'Signed in successfully');
-          },
-        );
-      },
-    );
-  }
 
   Future<void> _openCourseSwitcher(BuildContext context) async {
     await CourseSwitcherSheet.show(
@@ -246,37 +122,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _openSettings(BuildContext context) async {
-    await SettingsSheet.show(
-      context,
-      soundOn: app.soundOn,
-      hapticsOn: app.hapticsOn,
-      onSoundChanged: (v) => setState(() => app.setSound(v)),
-      onHapticsChanged: (v) => setState(() => app.setHaptics(v)),
-      onAccountTap: () {
-        if (!app.isLoggedIn) {
-          SignInSheet.show(
-            context,
-            onGoogle: () => setState(() => app.signInAs('Alex (Google)')),
-            onApple: () => setState(() => app.signInAs('Alex (Apple)')),
-            onEmail: _startEmailOtpSignIn,
-            onSkip: () {},
-          );
-        } else {
-          setState(() => app.signOut());
-          AppToast.showInfo(context, 'Signed out');
-        }
-      },
-      accountLabel: app.isLoggedIn
-          ? 'Signed in as ${app.displayName}'
-          : 'Guest (sign in to compete)',
-      avatarLetter: app.isLoggedIn
-          ? (app.displayName.trim().isNotEmpty
-                ? app.displayName.trim()[0].toUpperCase()
-                : 'U')
-          : 'G',
-    );
-  }
 
   Future<String?> _pickQuickLanguage(
     BuildContext context, {

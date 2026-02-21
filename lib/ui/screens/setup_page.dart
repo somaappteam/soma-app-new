@@ -1,16 +1,12 @@
-// lib/ui/screens/setup_page.dart
 import 'package:flutter/material.dart';
-
 import '../../core/routing/app_router.dart';
-import '../../core/theme/text_styles.dart';
-import '../../core/theme/spacing.dart';
 import '../../core/theme/colors.dart';
+import '../../core/theme/spacing.dart';
+import '../../core/theme/text_styles.dart';
 import '../components/common/app_shell.dart';
-import '../components/common/panel_card.dart';
 import '../components/common/primary_button.dart';
+import '../components/common/panel_card.dart';
 
-/// First-time setup (UI-only).
-/// Lets user choose base + target language and mode.
 class SetupPage extends StatefulWidget {
   const SetupPage({super.key});
 
@@ -19,183 +15,189 @@ class SetupPage extends StatefulWidget {
 }
 
 class _SetupPageState extends State<SetupPage> {
-  String baseLang = 'English';
-  String targetLang = 'Japanese';
+  final PageController _pageController = PageController();
+  int _currentIndex = 0;
 
-  bool compete = false;
+  String? _selectedLanguage;
+  String? _selectedLevel;
 
-  final List<String> languages = const [
-    'English',
-    'Portuguese',
-    'French',
-    'Spanish',
-    'Arabic',
-    'Swahili',
-    'Japanese',
-    'Korean',
-    'German',
+  final List<String> _languages = const [
+    'Spanish', 'French', 'Japanese', 'German', 'Korean', 'Italian', 'Portuguese'
   ];
 
-  Future<void> _pickLang({required bool pickBase}) async {
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _LanguagePickerSheet(
-        title: pickBase ? 'I speak' : "I'm learning",
-        languages: languages,
-      ),
-    );
-    if (selected == null) return;
-    setState(() {
-      if (pickBase) {
-        baseLang = selected;
-      } else {
-        targetLang = selected;
-      }
-    });
+  final List<String> _levels = const [
+    'Beginner', 'Intermediate', 'Advanced',
+  ];
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _nextPage() {
+    if (_currentIndex < 2) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.fastOutSlowIn,
+      );
+    } else {
+      // Finish onboarding
+      Navigator.pushReplacementNamed(context, AppRouter.home);
+    }
+  }
+
+  bool _canProceed() {
+    if (_currentIndex == 0) return true;
+    if (_currentIndex == 1) return _selectedLanguage != null;
+    if (_currentIndex == 2) return _selectedLevel != null;
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.s24),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: AppSpacing.s16),
-            Text('Choose your course', style: AppTextStyles.title),
-            const SizedBox(height: AppSpacing.s8),
-            Text(
-              'Pick what you speak and what you want to learn.',
-              style: AppTextStyles.bodyMuted,
-            ),
-            const SizedBox(height: AppSpacing.s24),
-
-            PanelCard(
-              child: Column(
-                children: [
-                  _SelectorRow(
-                    title: 'I speak',
-                    value: baseLang,
-                    onTap: () => _pickLang(pickBase: true),
-                  ),
-                  const Divider(color: AppColors.panelBorder, height: 24),
-                  _SelectorRow(
-                    title: "I'm learning",
-                    value: targetLang,
-                    onTap: () => _pickLang(pickBase: false),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.s16),
-
-            PanelCard(
+            // Custom Progress Indicator
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24, vertical: AppSpacing.s16),
               child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      compete ? 'Mode: Compete' : 'Mode: Solo',
-                      style: AppTextStyles.subtitle,
+                children: List.generate(3, (index) {
+                  return Expanded(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: index <= _currentIndex ? AppColors.primary : AppColors.panelBorder,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
-                  ),
-                  _ModeToggle(
-                    compete: compete,
-                    onChanged: (v) => setState(() => compete = v),
-                  ),
-                ],
+                  );
+                }),
               ),
             ),
 
-            const Spacer(),
-
-            PrimaryButton(
-              label: 'Start',
-              onTap: () {
-                // UI-only: just navigate Home. Later you’ll store base/target/mode in AppController.
-                Navigator.pushReplacementNamed(context, AppRouter.home);
-              },
-              icon: Icons.play_arrow_rounded,
-            ),
-            const SizedBox(height: AppSpacing.s12),
-            Center(
-              child: Text(
-                'You can change course anytime from Home.',
-                style: AppTextStyles.small,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectorRow extends StatelessWidget {
-  const _SelectorRow({
-    required this.title,
-    required this.value,
-    required this.onTap,
-  });
-
-  final String title;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        child: Row(
-          children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) => setState(() => _currentIndex = index),
                 children: [
-                  Text(title, style: AppTextStyles.small),
-                  const SizedBox(height: 6),
-                  Text(value, style: AppTextStyles.body),
+                  _buildWelcomeStep(),
+                  _buildLanguageStep(),
+                  _buildLevelStep(),
                 ],
               ),
             ),
-            const Icon(
-              Icons.expand_more_rounded,
-              color: AppColors.textSecondary,
+
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.s24),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _canProceed() ? 1.0 : 0.5,
+                child: PrimaryButton(
+                  label: _currentIndex == 2 ? 'Start Learning' : 'Continue',
+                  icon: _currentIndex == 2 ? Icons.rocket_launch_rounded : Icons.arrow_forward_rounded,
+                  onTap: _canProceed() ? _nextPage : () {},
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class _ModeToggle extends StatelessWidget {
-  const _ModeToggle({required this.compete, required this.onChanged});
-  final bool compete;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: AppColors.panel2,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.panelBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+  Widget _buildWelcomeStep() {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.s32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _Pill(label: 'Solo', active: !compete, onTap: () => onChanged(false)),
-          _Pill(
-            label: 'Compete',
-            active: compete,
-            onTap: () => onChanged(true),
+          const Icon(
+            Icons.public_rounded,
+            size: 100,
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: AppSpacing.s32),
+          Text(
+            'Ready to master a new language?',
+            style: AppTextStyles.title.copyWith(fontSize: 32),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.s16),
+          Text(
+            'Bite-sized lessons, real-world context, and smart progression.',
+            style: AppTextStyles.bodyMuted.copyWith(fontSize: 18),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageStep() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.s24),
+          Text('I want to learn...', style: AppTextStyles.title.copyWith(fontSize: 28)),
+          const SizedBox(height: AppSpacing.s24),
+          Expanded(
+            child: ListView.separated(
+              itemCount: _languages.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
+              itemBuilder: (context, index) {
+                final lang = _languages[index];
+                final isSelected = _selectedLanguage == lang;
+                return _SelectableCard(
+                  label: lang,
+                  isSelected: isSelected,
+                  onTap: () => setState(() => _selectedLanguage = lang),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLevelStep() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.s24),
+          Text('My current level is...', style: AppTextStyles.title.copyWith(fontSize: 28)),
+          const SizedBox(height: AppSpacing.s24),
+          Expanded(
+            child: ListView.separated(
+              itemCount: _levels.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
+              itemBuilder: (context, index) {
+                final level = _levels[index];
+                final isSelected = _selectedLevel == level;
+                return _SelectableCard(
+                  label: level,
+                  isSelected: isSelected,
+                  onTap: () {
+                    setState(() => _selectedLevel = level);
+                    // UX improvement: auto-advance on the last step selection 
+                    // to reduce friction, but wait a tiny bit to show selection
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (mounted) _nextPage();
+                    });
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -203,74 +205,43 @@ class _ModeToggle extends StatelessWidget {
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.active, required this.onTap});
-
+class _SelectableCard extends StatelessWidget {
   final String label;
-  final bool active;
+  final bool isSelected;
   final VoidCallback onTap;
 
+  const _SelectableCard({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(AppSpacing.s20),
         decoration: BoxDecoration(
-          color: active
-              ? AppColors.primary.withOpacity(0.22)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
+          color: isSelected ? AppColors.primary.withOpacity(0.15) : AppColors.panel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.panelBorder,
+            width: isSelected ? 2 : 1,
+          ),
         ),
-        child: Text(
-          label,
-          style: active ? AppTextStyles.body : AppTextStyles.bodyMuted,
-        ),
-      ),
-    );
-  }
-}
-
-class _LanguagePickerSheet extends StatelessWidget {
-  const _LanguagePickerSheet({required this.title, required this.languages});
-
-  final String title;
-  final List<String> languages;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      child: PanelCard(
-        padding: const EdgeInsets.all(AppSpacing.s16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Text(title, style: AppTextStyles.subtitle),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded),
-                  color: AppColors.textSecondary,
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.subtitle.copyWith(
+                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s8),
-            ...languages.map(
-              (l) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l, style: AppTextStyles.body),
-                trailing: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.textSecondary,
-                ),
-                onTap: () => Navigator.pop(context, l),
               ),
             ),
+            if (isSelected) const Icon(Icons.check_circle_rounded, color: AppColors.primary),
           ],
         ),
       ),
