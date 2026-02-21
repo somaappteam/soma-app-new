@@ -6,6 +6,8 @@ import '../../core/theme/text_styles.dart';
 import '../../core/theme/spacing.dart';
 import '../components/common/panel_card.dart';
 import '../components/common/primary_button.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../components/common/app_toast.dart';
 
 /// UI-only Email entry for OTP login/signup.
 /// Flow:
@@ -37,6 +39,7 @@ class EmailEntrySheet extends StatefulWidget {
 class _EmailEntrySheetState extends State<EmailEntrySheet> {
   final TextEditingController _email = TextEditingController();
   bool _valid = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -113,16 +116,18 @@ class _EmailEntrySheetState extends State<EmailEntrySheet> {
                 ),
               ),
               onChanged: (v) => setState(() => _valid = _isValidEmail(v)),
-              onSubmitted: (_) => _submitIfValid(),
+              onSubmitted: (_) {
+                if (!_isLoading) _submitIfValid();
+              },
             ),
 
             const SizedBox(height: AppSpacing.s16),
 
             PrimaryButton(
-              label: 'Send code',
-              enabled: _valid,
-              icon: Icons.mail_rounded,
-              onTap: _valid ? _submitIfValid : null,
+              label: _isLoading ? 'Sending...' : 'Send code',
+              enabled: _valid && !_isLoading,
+              icon: _isLoading ? null : Icons.mail_rounded,
+              onTap: (_valid && !_isLoading) ? _submitIfValid : null,
             ),
           ],
         ),
@@ -130,10 +135,21 @@ class _EmailEntrySheetState extends State<EmailEntrySheet> {
     );
   }
 
-  void _submitIfValid() {
+  Future<void> _submitIfValid() async {
     final email = _email.text.trim();
     if (!_isValidEmail(email)) return;
-    Navigator.pop(context);
-    widget.onSendCode(email);
+
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithOtp(email: email);
+      if (!mounted) return;
+      Navigator.pop(context);
+      widget.onSendCode(email);
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 }

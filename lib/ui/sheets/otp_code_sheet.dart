@@ -6,6 +6,8 @@ import '../../core/theme/text_styles.dart';
 import '../../core/theme/spacing.dart';
 import '../components/common/panel_card.dart';
 import '../components/common/primary_button.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../components/common/app_toast.dart';
 
 /// UI-only OTP verification sheet.
 /// You can later connect this to Firebase/Supabase OTP.
@@ -40,6 +42,7 @@ class OtpCodeSheet extends StatefulWidget {
 class _OtpCodeSheetState extends State<OtpCodeSheet> {
   final TextEditingController _code = TextEditingController();
   bool _valid = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -120,26 +123,35 @@ class _OtpCodeSheetState extends State<OtpCodeSheet> {
                 ),
               ),
               onChanged: (v) => setState(() => _valid = _isValidCode(v)),
-              onSubmitted: (_) => _verifyIfValid(),
+              onSubmitted: (_) {
+                if (!_isLoading) _verifyIfValid();
+              },
             ),
 
             const SizedBox(height: AppSpacing.s16),
 
             PrimaryButton(
-              label: 'Verify',
-              enabled: _valid,
-              icon: Icons.verified_rounded,
-              onTap: _valid ? _verifyIfValid : null,
+              label: _isLoading ? 'Verifying...' : 'Verify',
+              enabled: _valid && !_isLoading,
+              icon: _isLoading ? null : Icons.verified_rounded,
+              onTap: (_valid && !_isLoading) ? _verifyIfValid : null,
             ),
 
             const SizedBox(height: AppSpacing.s12),
             Center(
               child: TextButton(
-                onPressed: () {
-                  // UI-only: pretend we resent code
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Code resent (UI demo)')),
-                  );
+                onPressed: _isLoading ? null : () async {
+                  setState(() => _isLoading = true);
+                  try {
+                    await Supabase.instance.client.auth.signInWithOtp(email: widget.email);
+                    if (!mounted) return;
+                    AppToast.showSuccess(context, 'Code resent!');
+                  } catch (e) {
+                    if (!mounted) return;
+                    AppToast.showError(context, e.toString());
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
+                  }
                 },
                 child: Text(
                   'Resend code',
@@ -155,10 +167,25 @@ class _OtpCodeSheetState extends State<OtpCodeSheet> {
     );
   }
 
-  void _verifyIfValid() {
+  Future<void> _verifyIfValid() async {
     final code = _code.text.trim();
     if (!_isValidCode(code)) return;
-    Navigator.pop(context);
-    widget.onVerified();
+
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.verifyOTP(
+        email: widget.email,
+        token: code,
+        type: OtpType.email,
+      );
+      if (!mounted) return;
+      Navigator.pop(context);
+      widget.onVerified();
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 }

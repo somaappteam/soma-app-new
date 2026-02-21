@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../ui/components/vocab_modes/vocab_mode_type.dart';
 import '../ui/components/sentence_modes/sentence_mode_type.dart';
 
@@ -30,9 +32,42 @@ class AppController extends ChangeNotifier {
   // Sentence game mode (UI-only for now)
   SentenceGameMode sentenceMode = SentenceGameMode.classicFill;
 
-  // Login (UI-only)
+  // Login
   bool isLoggedIn = false;
   String displayName = 'Guest';
+  StreamSubscription<AuthState>? _authStateSubscription;
+
+  AppController() {
+    _initAuthListener();
+  }
+
+  void _initAuthListener() {
+    // Check initial state
+    final session = Supabase.instance.client.auth.currentSession;
+    _updateAuthState(session);
+
+    // Listen to changes
+    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      _updateAuthState(data.session);
+    });
+  }
+
+  void _updateAuthState(Session? session) {
+    if (session != null) {
+      isLoggedIn = true;
+      displayName = session.user.email?.split('@').first ?? 'User';
+    } else {
+      isLoggedIn = false;
+      displayName = 'Guest';
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription?.cancel();
+    super.dispose();
+  }
 
   String get activeCourseLabel => '$baseLang → $targetLang';
 
@@ -77,16 +112,15 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // UI-only forced signin (for demo purposes if needed)
   void signInAs(String name) {
     isLoggedIn = true;
     displayName = name;
     notifyListeners();
   }
 
-  void signOut() {
-    isLoggedIn = false;
-    displayName = 'Guest';
-    notifyListeners();
+  Future<void> signOut() async {
+    await Supabase.instance.client.auth.signOut();
   }
 
   void setVocabMode(VocabGameMode mode) {

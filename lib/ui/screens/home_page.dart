@@ -222,8 +222,6 @@ class _HomePageState extends State<HomePage> {
           context,
           email: email,
           onVerified: () {
-            // UI-only: mark logged in
-            setState(() => app.signInAs(email.split('@').first));
             AppToast.showSuccess(context, 'Signed in successfully');
           },
         );
