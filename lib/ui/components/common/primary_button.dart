@@ -1,14 +1,13 @@
-// lib/ui/components/common/primary_button.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/motion/motion.dart';
+import '../../../core/motion/motion_widgets.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/radii.dart';
 import '../../../core/theme/shadows.dart';
 import '../../../core/theme/text_styles.dart';
 
-/// Primary CTA button with Unity-like "press bounce" and optional glow.
+/// Primary CTA button with shared SquishyButton motion.
 class PrimaryButton extends StatefulWidget {
   const PrimaryButton({
     super.key,
@@ -40,16 +39,9 @@ class PrimaryButton extends StatefulWidget {
 class _PrimaryButtonState extends State<PrimaryButton> {
   bool _pressed = false;
 
-  void _setPressed(bool v) {
-    if (!widget.enabled) return;
-    if (_pressed == v) return;
-    setState(() => _pressed = v);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isEnabled = widget.enabled && widget.onTap != null;
-
     final bg = !isEnabled
         ? AppColors.panel2
         : (_pressed ? widget.pressedColor : widget.color);
@@ -58,34 +50,16 @@ class _PrimaryButtonState extends State<PrimaryButton> {
         ? AppShadows.softGlow(widget.color)
         : const <BoxShadow>[];
 
-    final scale = _pressed ? AppMotion.pressScale : 1.0;
-
-    final child = Row(
-      mainAxisSize: widget.fullWidth ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (widget.icon != null) ...[
-          Icon(widget.icon, color: AppColors.textPrimary, size: 20),
-          const SizedBox(width: 10),
-        ],
-        Text(widget.label, style: AppTextStyles.button),
-      ],
-    );
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) {
-        if (!isEnabled) return;
+    return SquishyButton(
+      enabled: isEnabled,
+      onTap: () {
         if (widget.haptics) HapticFeedback.selectionClick();
-        _setPressed(true);
+        widget.onTap?.call();
       },
-      onTapCancel: () => _setPressed(false),
-      onTapUp: (_) => _setPressed(false),
-      onTap: isEnabled ? widget.onTap : null,
-      child: AnimatedScale(
-        scale: scale,
-        duration: _pressed ? AppMotion.tapDown : AppMotion.tapUp,
-        curve: _pressed ? Curves.easeOutCubic : AppMotion.bounceOut,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
         child: Container(
           width: widget.fullWidth ? double.infinity : null,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -95,7 +69,17 @@ class _PrimaryButtonState extends State<PrimaryButton> {
             boxShadow: [...AppShadows.buttonShadow, ...glow],
             border: Border.all(color: AppColors.panelBorder),
           ),
-          child: child,
+          child: Row(
+            mainAxisSize: widget.fullWidth ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (widget.icon != null) ...[
+                BouncyIcon(icon: widget.icon!, color: AppColors.textPrimary, size: 20),
+                const SizedBox(width: 10),
+              ],
+              Text(widget.label, style: AppTextStyles.button),
+            ],
+          ),
         ),
       ),
     );

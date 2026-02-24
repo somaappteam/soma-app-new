@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/data/languages.dart';
 import '../../core/routing/app_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/spacing.dart';
@@ -21,9 +22,7 @@ class _SetupPageState extends State<SetupPage> {
   String? _selectedLanguage;
   String? _selectedLevel;
 
-  final List<String> _languages = const [
-    'Spanish', 'French', 'Japanese', 'German', 'Korean', 'Italian', 'Portuguese'
-  ];
+  final List<String> _languages = appLanguages.map((l) => l.name).toList(growable: false);
 
   final List<String> _levels = const [
     'Beginner', 'Intermediate', 'Advanced',

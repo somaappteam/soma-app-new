@@ -17,6 +17,7 @@ class HudBar extends StatelessWidget {
     required this.xp,
     required this.streak,
     required this.onCourseTap,
+    this.onProfileTap,
   });
 
   final String baseLang;
@@ -25,6 +26,7 @@ class HudBar extends StatelessWidget {
   final int streak;
 
   final VoidCallback onCourseTap;
+  final VoidCallback? onProfileTap;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +54,15 @@ class HudBar extends StatelessWidget {
             value: streak.toString(),
             tooltip: 'Streak',
           ),
+          if (onProfileTap != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: onProfileTap,
+              icon: const Icon(Icons.person_rounded),
+              color: AppColors.textPrimary,
+              tooltip: 'Profile',
+            ),
+          ],
         ],
       ),
     );

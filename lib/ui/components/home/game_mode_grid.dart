@@ -5,7 +5,6 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../screens/player_page.dart';
-import '../sentence_modes/sentence_mode_type.dart';
 import '../vocab_modes/vocab_mode_type.dart';
 
 class GameModeGrid extends StatelessWidget {
@@ -16,9 +15,9 @@ class GameModeGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Mini Games', style: AppTextStyles.title),
+        Text('Vocabulary Mini Games', style: AppTextStyles.title),
         const SizedBox(height: AppSpacing.s4),
-        Text('Master vocabulary and grammar in bite-sized chunks.', style: AppTextStyles.bodyMuted),
+        Text('Master vocabulary in bite-sized chunks.', style: AppTextStyles.bodyMuted),
         const SizedBox(height: AppSpacing.s16),
         GridView.count(
           shrinkWrap: true,
@@ -34,35 +33,21 @@ class GameModeGrid extends StatelessWidget {
               subtitle: 'Quick vocab recall',
               iconText: '⚡',
               color: AppColors.accent,
-              onTap: () => _launchVocab(context, VocabGameMode.rapidChain),
+              onTap: () => _launch(context, VocabGameMode.rapidChain),
             ),
             _GameCard(
               title: 'Survival',
               subtitle: 'Beat the clock',
               iconText: '⏱️',
               color: Colors.redAccent,
-              onTap: () => _launchVocab(context, VocabGameMode.survivalTimer),
+              onTap: () => _launch(context, VocabGameMode.survivalTimer),
             ),
             _GameCard(
               title: 'Falling Words',
               subtitle: 'Catch the blocks',
               iconText: '🌧️',
               color: Colors.blueAccent,
-              onTap: () => _launchVocab(context, VocabGameMode.fallingWords),
-            ),
-            _GameCard(
-              title: 'Reconstruct',
-              subtitle: 'Sentence puzzles',
-              iconText: '🧩',
-              color: AppColors.success,
-              onTap: () => _launchSentence(context, SentenceGameMode.reconstructionCountdown),
-            ),
-            _GameCard(
-              title: 'Speed Elim',
-              subtitle: 'Spot the errors',
-              iconText: '🎯',
-              color: Colors.orangeAccent,
-              onTap: () => _launchSentence(context, SentenceGameMode.speedElimination),
+              onTap: () => _launch(context, VocabGameMode.fallingWords),
             ),
           ],
         ),
@@ -70,38 +55,16 @@ class GameModeGrid extends StatelessWidget {
     );
   }
 
-  void _launchVocab(BuildContext context, VocabGameMode mode) {
+  void _launch(BuildContext context, VocabGameMode mode) {
     Navigator.pushNamed(
       context,
       AppRouter.player,
-      arguments: PlayerArgs.solo(
-        isPractice: true,
-        vocabMode: mode,
-        sentenceMode: SentenceGameMode.reconstructionCountdown,
-      ),
-    );
-  }
-
-  void _launchSentence(BuildContext context, SentenceGameMode mode) {
-    Navigator.pushNamed(
-      context,
-      AppRouter.player,
-      arguments: PlayerArgs.solo(
-        isPractice: true,
-        vocabMode: VocabGameMode.rapidChain,
-        sentenceMode: mode,
-      ),
+      arguments: PlayerArgs.solo(isPractice: true, vocabMode: mode),
     );
   }
 }
 
 class _GameCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String iconText;
-  final Color color;
-  final VoidCallback onTap;
-
   const _GameCard({
     required this.title,
     required this.subtitle,
@@ -109,6 +72,12 @@ class _GameCard extends StatelessWidget {
     required this.color,
     required this.onTap,
   });
+
+  final String title;
+  final String subtitle;
+  final String iconText;
+  final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -121,13 +90,6 @@ class _GameCard extends StatelessWidget {
           color: AppColors.panel,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.panelBorder),
-          boxShadow: [
-             BoxShadow(
-               color: color.withValues(alpha: 0.05),
-               blurRadius: 10,
-               offset: const Offset(0, 4),
-             ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +97,7 @@ class _GameCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
+                color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(iconText, style: const TextStyle(fontSize: 24)),

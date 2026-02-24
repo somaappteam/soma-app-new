@@ -1,27 +1,22 @@
-// lib/ui/screens/home_page.dart
 import 'package:flutter/material.dart';
 
 import '../../controllers/app_controller.dart';
+import '../../core/data/languages.dart';
 import '../../core/routing/app_router.dart';
-import '../../core/theme/colors.dart';
-import '../../core/theme/text_styles.dart';
 import '../../core/theme/spacing.dart';
-import '../components/home/daily_goal_card.dart';
-import '../components/home/game_mode_grid.dart';
 import '../components/common/app_shell.dart';
 import '../components/common/continue_card.dart';
 import '../components/common/hud_bar.dart';
+import '../components/home/daily_goal_card.dart';
+import '../components/home/game_mode_grid.dart';
 import '../sheets/course_switcher_sheet.dart';
 import 'player_page.dart';
-import '../components/common/focus_chip.dart';
-import '../sheets/focus_picker_sheet.dart';
 
-
-/// Home hub: only 3 actions (Continue / Practice / Compete).
-/// UI-only state is stored in a simple AppController instance.
 class HomePage extends StatefulWidget {
+  const HomePage({super.key, required this.app, this.onProfileTap});
+
   final AppController app;
-  const HomePage({super.key, required this.app});
+  final VoidCallback? onProfileTap;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -29,7 +24,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final AppController app;
-  LearningFocus focus = LearningFocus.mix;
 
   @override
   void initState() {
@@ -57,53 +51,34 @@ class _HomePageState extends State<HomePage> {
         xp: app.xp,
         streak: app.streak,
         onCourseTap: () => _openCourseSwitcher(context),
+        onProfileTap: widget.onProfileTap,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.s16),
         child: ListView(
           children: [
             const SizedBox(height: AppSpacing.s8),
-
-            DailyGoalCard(
-              currentXp: app.xp,
-              streak: app.streak,
-            ),
+            DailyGoalCard(currentXp: app.xp, streak: app.streak),
             const SizedBox(height: AppSpacing.s16),
-
             ContinueCard(
-              focus: focus,
-              progress: 0.35, // UI-only for now (later from progress)
-              etaText: focus == LearningFocus.vocabulary ? '1 min' : '2 min',
               onTap: () {
                 Navigator.pushNamed(
                   context,
                   AppRouter.player,
-                  arguments: PlayerArgs.solo(
-                    isPractice: false,
-                    vocabMode: app.vocabMode,
-                    sentenceMode: app.sentenceMode,
-                  ),
+                  arguments: PlayerArgs.solo(isPractice: false, vocabMode: app.vocabMode),
                 );
               },
-              onFocusTap: () {
-                FocusPickerSheet.show(
-                  context,
-                  current: focus,
-                  onSelected: (f) => setState(() => focus = f),
-                );
-              },
+              progress: 0.35,
+              etaText: '1 min',
             ),
             const SizedBox(height: AppSpacing.s32),
-
             const GameModeGrid(),
-            
             const SizedBox(height: AppSpacing.s32),
           ],
         ),
       ),
     );
   }
-
 
   Future<void> _openCourseSwitcher(BuildContext context) async {
     await CourseSwitcherSheet.show(
@@ -112,85 +87,65 @@ class _HomePageState extends State<HomePage> {
       courses: app.courses,
       onSelectCourse: (label) => setState(() => app.selectCourseLabel(label)),
       onAddCourse: () async {
-        // Simple add flow (UI-only): pick base & target from a tiny list.
         final base = await _pickQuickLanguage(context, title: 'I speak');
         if (base == null) return;
-        final target = await _pickQuickLanguage(context, title: "I'm learning");
+        final target = await _pickQuickLanguage(context, title: 'I want to learn');
         if (target == null) return;
+        if (!mounted) return;
         setState(() => app.addCourse(base, target));
       },
     );
   }
 
-
-  Future<String?> _pickQuickLanguage(
-    BuildContext context, {
-    required String title,
-  }) {
-    const langs = [
-      'English',
-      'Portuguese',
-      'French',
-      'Spanish',
-      'Arabic',
-      'Swahili',
-      'Japanese',
-      'Korean',
-      'German',
-    ];
-
+  Future<String?> _pickQuickLanguage(BuildContext context, {required String title}) async {
+    const langs = appLanguages;
     return showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _QuickPickSheet(title: title, items: langs),
-    );
-  }
-}
-
-class _QuickPickSheet extends StatelessWidget {
-  const _QuickPickSheet({required this.title, required this.items});
-
-  final String title;
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(AppSpacing.s16),
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: AppColors.panel,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.panelBorder),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1D2A),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF2B3043)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(title, style: AppTextStyles.subtitle),
-              const Spacer(),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded),
-                color: AppColors.textSecondary,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+                child: Row(
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Colors.white)),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      icon: const Icon(Icons.close_rounded, color: Color(0xFF9AA3B2)),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0x332B3043)),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: langs.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0x1AFFFFFF)),
+                  itemBuilder: (_, i) {
+                    final l = langs[i];
+                    return ListTile(
+                      title: Text(l.name, style: const TextStyle(color: Colors.white)),
+                      subtitle: Text(l.code, style: const TextStyle(color: Color(0xFF9AA3B2))),
+                      onTap: () => Navigator.pop(ctx, l.name),
+                    );
+                  },
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.s8),
-          ...items.map(
-            (x) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(x, style: AppTextStyles.body),
-              trailing: const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary,
-              ),
-              onTap: () => Navigator.pop(context, x),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
