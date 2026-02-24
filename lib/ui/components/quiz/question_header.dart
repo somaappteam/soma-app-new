@@ -1,9 +1,8 @@
-// lib/ui/components/quiz/question_header.dart
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/colors.dart';
-import '../../../core/theme/text_styles.dart';
 import '../../../core/theme/spacing.dart';
+import '../../../core/theme/text_styles.dart';
 import '../../../models/quiz_step_model.dart';
 import '../common/panel_card.dart';
 
@@ -16,52 +15,19 @@ class QuestionHeader extends StatelessWidget {
   });
 
   final QuizStep step;
-  final int stepIndex; // 0-based
+  final int stepIndex;
   final int totalSteps;
-
-  String get _typeLabel {
-    switch (step.type) {
-      case QuizType.vocabMcq:
-        return 'Vocabulary';
-      case QuizType.sentenceFill:
-        return 'Sentence';
-    }
-  }
-
-  Color get _typeColor {
-    switch (step.type) {
-      case QuizType.vocabMcq:
-        return AppColors.success;
-      case QuizType.sentenceFill:
-        return AppColors.secondary;
-    }
-  }
-
-  IconData get _typeIcon {
-    switch (step.type) {
-      case QuizType.vocabMcq:
-        return Icons.quiz_rounded;
-      case QuizType.sentenceFill:
-        return Icons.translate_rounded;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return PanelCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s12,
-        vertical: AppSpacing.s8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12, vertical: AppSpacing.s8),
       child: Row(
         children: [
-          _TypeChip(label: _typeLabel, color: _typeColor, icon: _typeIcon),
+          const _TypeChip(label: 'Vocabulary', color: AppColors.success, icon: Icons.quiz_rounded),
           const SizedBox(width: AppSpacing.s12),
-
           _XpPill(xp: step.xpReward),
-
           const Spacer(),
-
           Text('${stepIndex + 1}/$totalSteps', style: AppTextStyles.small),
         ],
       ),
@@ -70,11 +36,7 @@ class QuestionHeader extends StatelessWidget {
 }
 
 class _TypeChip extends StatelessWidget {
-  const _TypeChip({
-    required this.label,
-    required this.color,
-    required this.icon,
-  });
+  const _TypeChip({required this.label, required this.color, required this.icon});
 
   final String label;
   final Color color;
@@ -94,10 +56,7 @@ class _TypeChip extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: AppTextStyles.small.copyWith(color: AppColors.textPrimary),
-          ),
+          Text(label, style: AppTextStyles.small.copyWith(color: AppColors.textPrimary)),
         ],
       ),
     );
@@ -120,16 +79,9 @@ class _XpPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.star_rounded,
-            size: 16,
-            color: AppColors.textSecondary,
-          ),
+          const Icon(Icons.star_rounded, size: 16, color: AppColors.textSecondary),
           const SizedBox(width: 6),
-          Text(
-            '+$xp',
-            style: AppTextStyles.small.copyWith(color: AppColors.textPrimary),
-          ),
+          Text('+$xp', style: AppTextStyles.small.copyWith(color: AppColors.textPrimary)),
         ],
       ),
     );

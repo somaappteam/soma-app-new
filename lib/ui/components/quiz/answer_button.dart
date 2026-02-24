@@ -2,9 +2,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../../core/motion/motion.dart';
 import '../../../core/theme/colors.dart';
-import '../../../core/theme/text_styles.dart';
 import '../../../core/theme/radii.dart';
+import '../../../core/theme/text_styles.dart';
 
 enum AnswerVisualState { idle, selected, correct, wrong }
 
@@ -32,10 +33,7 @@ class _AnswerButtonState extends State<AnswerButton> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _shakeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
+    _shakeController = AnimationController(vsync: this, duration: AppMotion.shake);
   }
 
   @override
@@ -105,18 +103,15 @@ class _AnswerButtonState extends State<AnswerButton> with SingleTickerProviderSt
     return AnimatedBuilder(
       animation: _shakeController,
       builder: (context, child) {
-        // Shake logic: 3 full sine waves
-        final dx = math.sin(_shakeController.value * math.pi * 6) * 6;
-        return Transform.translate(
-          offset: Offset(dx, 0),
-          child: child,
-        );
+        final dx = math.sin(_shakeController.value * math.pi * 4) * 4;
+        return Transform.translate(offset: Offset(dx, 0), child: child);
       },
       child: InkWell(
         onTap: widget.enabled ? widget.onTap : null,
         borderRadius: AppRadii.br16,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: AppMotion.gentle,
+          curve: AppMotion.smooth,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: _bg,
@@ -131,11 +126,7 @@ class _AnswerButtonState extends State<AnswerButton> with SingleTickerProviderSt
                 Icon(_icon, color: _iconColor, size: 20),
               ] else if (widget.state == AnswerVisualState.selected) ...[
                 const SizedBox(width: 10),
-                const Icon(
-                  Icons.radio_button_checked,
-                  color: AppColors.primary,
-                  size: 18,
-                ),
+                const Icon(Icons.radio_button_checked, color: AppColors.primary, size: 18),
               ],
             ],
           ),

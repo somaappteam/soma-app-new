@@ -12,7 +12,8 @@ import '../sheets/otp_code_sheet.dart';
 
 class ProfilePage extends StatefulWidget {
   final AppController app;
-  const ProfilePage({super.key, required this.app});
+  final VoidCallback? onBack;
+  const ProfilePage({super.key, required this.app, this.onBack});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -42,6 +43,15 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.all(AppSpacing.s24),
         child: ListView(
           children: [
+            if (widget.onBack != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  color: AppColors.textPrimary,
+                ),
+              ),
             const SizedBox(height: AppSpacing.s16),
             if (!widget.app.isLoggedIn) _buildSignedOutBanner(context) else _buildProfileHeader(),
             const SizedBox(height: AppSpacing.s32),

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../ui/components/vocab_modes/vocab_mode_type.dart';
-import '../ui/components/sentence_modes/sentence_mode_type.dart';
 
 /// UI-only global state for now.
 /// Later you can connect this to local storage + backend.
@@ -28,9 +27,6 @@ class AppController extends ChangeNotifier {
 
   // Active Vocab Mode (UI-only for now)
   VocabGameMode vocabMode = VocabGameMode.classicMcq;
-
-  // Sentence game mode (UI-only for now)
-  SentenceGameMode sentenceMode = SentenceGameMode.classicFill;
 
   // Login
   bool isLoggedIn = false;
@@ -128,8 +124,4 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSentenceMode(SentenceGameMode mode) {
-    sentenceMode = mode;
-    notifyListeners();
-  }
 }
